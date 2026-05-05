@@ -6,9 +6,9 @@ use crate::view::color::RGBColor;
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum Colors {
     #[default]
-    Default, // default/background
-    Focused,     // default/alt background
-    Inverted,    // background/default
+    Default, // default foreground on the default background
+    Focused,     // default foreground on the focused background
+    Inverted,    // default, just inverted
     Insert,      // white/green
     Warning,     // white/yellow
     PinnedQuery, // white/blue
@@ -16,7 +16,10 @@ pub enum Colors {
     PathMode,    // white/pink
     SearchMode,  // white/purple
     SelectMode,  // white/blue
+    // Custom foreground on the default background
     CustomForeground(RGBColor),
+    // Custom foreground on the focused background
     CustomFocusedForeground(RGBColor),
+    // Fully resolved colors; used when a specific background must be preserved
     Custom(RGBColor, RGBColor),
 }
