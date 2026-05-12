@@ -48,11 +48,67 @@ impl Iterator for InputParser {
             [0x09, ..] => (Key::Tab, 1),
             [b @ 0x01..=0x1A, ..] => (Key::Ctrl((b + b'a' - 1) as char), 1),
             [b @ 0x20..=0x7E, ..] => (Key::Char(*b as char), 1),
+            [b @ 0x80..=0xFF, ..] => utf8_char(slice, *b)?,
             _ => return None,
         };
 
         self.offset += consumed;
 
         Some(Event::Key(key))
+    }
+}
+
+fn utf8_char(slice: &[u8], first_byte: u8) -> Option<(Key, usize)> {
+    let len = match first_byte {
+        0xC2..=0xDF => 2,
+        0xE0..=0xEF => 3,
+        0xF0..=0xF4 => 4,
+        _ => return None,
+    };
+
+    let data = slice.get(..len)?;
+    let character = std::str::from_utf8(data).ok()?.chars().next()?;
+
+    Some((Key::Char(character), len))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::InputParser;
+    use crate::input::Key;
+    use crate::models::application::Event;
+
+    #[test]
+    fn parses_utf8_character_input() {
+        let mut parser = InputParser::new();
+
+        parser.feed("é".as_bytes());
+
+        assert_eq!(parser.next(), Some(Event::Key(Key::Char('é'))));
+        assert_eq!(parser.next(), None);
+    }
+
+    #[test]
+    fn waits_for_complete_utf8_character_input() {
+        let mut parser = InputParser::new();
+
+        parser.feed(&[0xC3]);
+        assert_eq!(parser.next(), None);
+
+        parser.feed(&[0xA9]);
+
+        assert_eq!(parser.next(), Some(Event::Key(Key::Char('é'))));
+        assert_eq!(parser.next(), None);
+    }
+
+    #[test]
+    fn parses_utf8_character_followed_by_ascii_input() {
+        let mut parser = InputParser::new();
+
+        parser.feed("éa".as_bytes());
+
+        assert_eq!(parser.next(), Some(Event::Key(Key::Char('é'))));
+        assert_eq!(parser.next(), Some(Event::Key(Key::Char('a'))));
+        assert_eq!(parser.next(), None);
     }
 }

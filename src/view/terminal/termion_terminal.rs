@@ -33,6 +33,7 @@ const RESIZE: Token = Token(1);
 pub struct TermionTerminal {
     event_listener: Mutex<Poll>,
     signals: Mutex<Signals>,
+    input_parser: Mutex<InputParser>,
     output: Mutex<Option<BufWriter<RawTerminal<AlternateScreen<Stdout>>>>>,
     current_style: Mutex<Option<Style>>,
     current_colors: Mutex<Option<Colors>>,
@@ -47,6 +48,7 @@ impl TermionTerminal {
         Ok(TermionTerminal {
             signals: Mutex::new(signals),
             event_listener: Mutex::new(event_listener),
+            input_parser: Mutex::new(InputParser::new()),
             output: Mutex::new(Some(create_output_instance())),
             current_style: Mutex::new(None),
             current_colors: Mutex::new(None),
@@ -187,20 +189,20 @@ impl Terminal for TermionTerminal {
 
                     let mut input_data = [0u8; 1024];
 
-                    match stdin().read(&mut input_data) {
+                    let bytes_read = match stdin().read(&mut input_data) {
                         Ok(0) => break, // 0 bytes, EOF
                         Err(ref e) if e.kind() == ErrorKind::WouldBlock => break,
                         Err(e) => {
                             debug!("error reading stdin: {e}");
                             break;
                         }
-                        Ok(_) => (),
-                    }
+                        Ok(bytes_read) => bytes_read,
+                    };
 
-                    let mut input_parser = InputParser::new();
-                    input_parser.feed(&input_data);
+                    let mut input_parser = self.input_parser.lock().ok()?;
+                    input_parser.feed(&input_data[..bytes_read]);
 
-                    for key in input_parser {
+                    while let Some(key) = input_parser.next() {
                         debug!("read key from stdin: {:?}", key);
 
                         mapped_events.push(key);
