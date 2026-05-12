@@ -17,7 +17,7 @@ build = "build/main.rs"
 regex = "1.10"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
-syntect = "5.1"
+syntect = { version = "5.1", default-features = false, features = ["default-fancy"] }
 
 [dependencies]
 app_dirs2 = "2.5"
@@ -27,7 +27,7 @@ luthor = "0.2"
 fragment = "0.3"
 regex = "1.10"
 libc = "0.2"
-syntect = "5.1"
+syntect = { version = "5.1", default-features = false, features = ["default-fancy"] }
 termion = "2.0"
 anyhow = "1.0"
 unicode-segmentation = "1.10"
