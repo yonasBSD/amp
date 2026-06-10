@@ -58,7 +58,7 @@
           src = pkgs.lib.cleanSource ./.;
 
           # Packages needed at runtime
-          buildInputs = with pkgs; [ git xorg.libxcb zlib ];
+          buildInputs = with pkgs; [ git libxcb zlib ];
 
           # Packages needed during the build
           nativeBuildInputs = with pkgs; [ git ];
